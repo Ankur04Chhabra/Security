@@ -1,0 +1,170 @@
+Requirement:
+
+There are 3 teams are working in development of project.
+
+1: create separate users for each team for a particular database and track their activity.
+2: Assign database level permission as follows:
+	
+	a:) Select permission of all tables except two table.
+	b:) View definition permission to all users.
+	c:) Execute stored procedure except two of them.
+	d:) Alter permission to only one Team(Admin Team).
+	e:) Database backup/create permission to Admin Team only.
+
+3: Create Roles for all these permissions and assign to these users(Two roles will be created).
+4: Add these 5 users in Windows AD Group and assign this group to Teams.  
+
+
+Solution
+2:) 
+
+STEP 1: Allow datareader fixed database role to all 3 users.
+STEP 2: Deny select statement on two objects to all 3 users
+
+eg: Deny 
+
+use [CCTNS_STATE_DB_OD_V3_HR]
+GO
+DENY SELECT ON [dbo].[CM_TB_DOCUMENT_CONTENT] TO [Admin]
+GO
+use [CCTNS_STATE_DB_OD_V3_HR]
+GO
+DENY SELECT ON [dbo].[CM_TB_DOCUMENT_GROUP] TO [Admin]
+GO
+
+
+b:) Grant View defintion to all 3 users
+eg:
+
+use [CCTNS_STATE_DB_OD_V3_HR]
+GO
+GRANT VIEW DEFINITION TO [Admin]
+GO
+
+GRANT VIEW DEFINITION TO [OPS]
+GO
+GRANT VIEW DEFINITION TO [FINANCE]
+GO
+
+
+
+c:) Grant Execute permission to all 3 users
+
+use [CCTNS_STATE_DB_OD_V3_HR]
+GO
+GRANT EXECUTE TO [Admin]
+GO
+GRANT EXECUTE TO [OPS]
+GO
+GRANT EXECUTE TO [FINANCE]
+GO
+
+-- Deny Execute permiision from selected stored procedure to selected user
+
+DENY EXECUTE ON DBO.[CM_SP_GetWorkflowHistory] TO [FINANCE]
+GO
+
+
+d:) Alter permission to Admin Team
+
+
+use [CCTNS_STATE_DB_OD_V3_HR]
+GO
+GRANT ALTER TO [Admin]
+
+-- Grant Alter permission to specific object to spectific user
+use [CCTNS_STATE_DB_OD_V3_HR]
+GO
+GRANT ALTER ON [dbo].[CM_TB_DOCUMENT_CONTENT] TO [Admin]
+GO
+
+
+3:) Part :: 1
+
+Create First role for Developers and assign permissions
+
+
+USE CCTNS_STATE_DB_OD_V3_HR
+GO
+GRANT SELECT TO [DEVELOPMENT_ROLE]
+GO
+USE CCTNS_STATE_DB_OD_V3_HR
+GO
+
+DENY SELECT ON CM_TB_DOCUMENT_CONTENT TO [DEVELOPMENT_ROLE]
+DENY SELECT ON CM_TB_DOCUMENT_GROUP TO [DEVELOPMENT_ROLE]
+
+USE CCTNS_STATE_DB_OD_V3_HR
+GO
+
+GRANT EXECUTE TO [DEVELOPMENT_ROLE]
+
+USE CCTNS_STATE_DB_OD_V3_HR
+GO
+
+GRANT VIEW DEFINITION TO [DEVELOPMENT_ROLE]
+
+
+---Check Role and its permission with Assigned users
+
+
+SELECT * FROM 
+(
+SELECT PRI.name,PRI.type_desc,CASE WHEN is_fixed_role=1 THEN 'Fixed Database Role' ELSE 'User Defined Database Role' END AS ROLE_TYPE,
+PER.class_desc,OBJECT_NAME(PER.MAJOR_ID) AS [OBJECT],PER.permission_name,PER.state_desc,
+(SELECT name FROM sys.DATABASE_PRINCIPALS WHERE principal_id=  RM.member_principal_id) AS ROLE_HOLDER_PRINCIPAL
+FROM sys.database_principals AS PRI 
+INNER JOIN sys.database_permissions AS PER 
+ON PRI.principal_id=PER.grantee_principal_id
+INNER JOIN sys.database_role_members AS RM ON RM.role_principal_id=PRI.principal_id
+WHERE PRI.principal_id=10
+) AS TBL ORDER BY ROLE_HOLDER_PRINCIPAL
+
+
+Part 2:) Create Role for Admin Only for Admin Purpose
+
+use CCTNS_STATE_DB_OD_V3_HR
+go
+
+SELECT * FROM sys.fn_builtin_permissions('')
+
+go
+
+USE CCTNS_STATE_DB_OD_V3_HR
+GO
+
+GRANT BACKUP DATABASE TO [Admin_Role]
+GRANT ALTER ANY SCHEMA TO [Admin_Role]
+GRANT CREATE TABLE TO [Admin_Role]
+GRANT CREATE VIEW TO [Admin_Role]
+GRANT CREATE PROCEDURE TO [Admin_Role]
+GRANT CREATE FUNCTION TO [Admin_Role]
+
+GRANT BACKUP LOG TO [Admin_Role]
+
+-- While Granting Create Database permission it through error as
+
+CREATE DATABASE permission can only be granted in the master database.
+Msg 0, Level 11, State 0, Line 15
+A severe error occurred on the current command.  The results, if any, should be discarded.
+
+It means a user who want to create database  that user must be present in master database in user list.
+so first create the user with Admin in master database.then grant permission to user(Admin).
+
+GRANT CREATE DATABASE TO [Admin]
+
+
+After granting create table/view/sp/function permission , table/view/sp/fun does not created as they throguh error as
+
+Msg 2760, Level 16, State 1, Procedure sp_test, Line 1 [Batch Start Line 12]
+The specified schema name "dbo" either does not exist or you do not have permission to use it.
+
+To relove this error , Grant ALTER ANY SCHEMA permission to user.
+
+
+
+
+
+
+
+

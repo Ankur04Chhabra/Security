@@ -1,0 +1,24 @@
+select * from sys.database_role_members where member_principal_id=11
+-- Database Permissions assigned to  User/Login
+select name as [Principal Name],type_desc as [Window/ SQL User],
+permission.permission_name,state_desc
+
+from sys.database_principals as Principals
+inner join sys.database_permissions as permission
+on Principals.principal_id=permission.grantee_principal_id
+where Principals.name='Admin'
+
+
+-- Server Permissions assigned to  User/Login
+select name as [Principal Name],type_desc as [Window/ SQL User],
+permission.permission_name,state_desc
+
+from sys.server_principals as Principals
+inner join sys.server_permissions as permission
+on Principals.principal_id=permission.grantee_principal_id
+where Principals.name='OPS'
+
+sp_helpdbfixedrole
+sp_dbfixedrolepermission  'db_owner' 
+  
+sp_helprolemember 'db_owner'

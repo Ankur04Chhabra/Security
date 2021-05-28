@@ -1,0 +1,21 @@
+SQLAgentUserRole:
+1: Does not have access permission of Alerts,operators,proxies and error logs
+in SQL Server Agent 
+2: Alert will not allowed in job properties
+3: user assigned with this role can view only jobs created by itself. 
+4: Sysadmin user can view all jobs which is created by any user. 
+
+SQLAgentReaderRole:
+It carries all the permission that SQLAgentUser has.
+1: Does not have access permission of Alerts,operators,proxies and error logs
+in SQL Server Agent.
+2: Can view all other jobs that are available in SQL Server Agent.
+3: can only view the owner/steps/schedule but cannot change anything.
+4: cannot enable/disable/ delete the job which is owned by another SQL Agent role.
+
+SQLAgentOperatorRole:
+It carries all the permission that SQLAgentUser and SQLAgentOperator has.
+1:It has access for all Alerts,operators,proxies and error logs
+in SQL Server Agent.
+2: Can view all other jobs that are available in SQL Server Agent.
+3: can enable/disable/delete and view the history of job
